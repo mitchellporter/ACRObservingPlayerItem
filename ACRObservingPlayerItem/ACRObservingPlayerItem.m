@@ -27,7 +27,13 @@ static NSString *const kStatusKeyPath = @"status";
 }
 
 - (void)addObservers {
+    
     [self addObserver:self forKeyPath:kStatusKeyPath options:NSKeyValueObservingOptionNew context:nil];
+    
+    // Add self as observer for your 2 custom notifications
+    [self addObserver:self forKeyPath:@"playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
+    [self addObserver:self forKeyPath:@"playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
+
 
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(playerItemReachedEnd:)
@@ -43,6 +49,9 @@ static NSString *const kStatusKeyPath = @"status";
 - (void)removeObservers {
     if (self.currentlyObserving) {
         [self removeObserver:self forKeyPath:kStatusKeyPath context:nil];
+        [self removeObserver:self forKeyPath:@"playbackBufferEmpty" context:nil];
+        [self removeObserver:self forKeyPath:@"playbackLikelyToKeepUp" context:nil];
+
         [[NSNotificationCenter defaultCenter] removeObserver:self
                                                         name:AVPlayerItemDidPlayToEndTimeNotification
                                                       object:self];
@@ -53,9 +62,12 @@ static NSString *const kStatusKeyPath = @"status";
         if (self.delegate && [self.delegate respondsToSelector:@selector(playerItemRemovedObservation)]) {
             [self.delegate playerItemRemovedObservation];
             _delegate = nil;
+            
         }
         self.currentlyObserving = NO;
     }
+    
+    
 }
 
 - (void)playerItemReachedEnd:(NSNotification *)notification {
@@ -71,6 +83,8 @@ static NSString *const kStatusKeyPath = @"status";
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    
+    
     if (object == self && [keyPath isEqualToString:kStatusKeyPath]) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (self.status == AVPlayerItemStatusReadyToPlay) {
@@ -84,7 +98,26 @@ static NSString *const kStatusKeyPath = @"status";
             }
         });
         return;
+        
+    } else if (object == self && [keyPath isEqualToString:@"playbackBufferEmpty"]) {
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (self.delegate && [self.delegate respondsToSelector:@selector(playerItemPlaybackBufferEmpty)]) {
+                [self.delegate playerItemPlaybackBufferEmpty];
+            }
+        });
+        
+        return;
+    } else if (object == self && [keyPath isEqualToString:@"playbackLikelyToKeepUp"]) {
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (self.delegate && [self.delegate respondsToSelector:@selector(playerItemPlaybackLikelyToKeepUp)]) {
+                [self.delegate playerItemPlaybackLikelyToKeepUp];
+            }
+        });
+        return;
     }
+    
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     return;
 }
