@@ -15,6 +15,8 @@
 - (void)playerItemReadyToPlay;
 - (void)playerItemPlayFailed;
 - (void)playerItemRemovedObservation;
+- (void)playerItemPlaybackLikelyToKeepUp;
+- (void)playerItemPlaybackBufferEmpty;
 @end
 
 @interface ACRObservingPlayerItem : AVPlayerItem
